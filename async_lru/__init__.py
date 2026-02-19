@@ -236,11 +236,9 @@ class _LRUCacheWrapper(Generic[_R]):
             raise RuntimeError(f"alru_cache is closed for {self}")
 
         loop = asyncio.get_running_loop()
-        self._check_loop(loop)
-
         key = _make_key(fn_args, fn_kwargs, self.__typed)
-
         cache_item = self.__cache.get(key)
+        self._check_loop(loop)
 
         if cache_item is not None:
             self._cache_hit(key)
