@@ -75,26 +75,35 @@ class _LRUCacheWrapper(Generic[_R]):
         ttl: Optional[float],
         jitter: Optional[float],
     ) -> None:
-        try:
-            self.__module__ = fn.__module__
-        except AttributeError:
-            pass
+        for attr in ("module", "qualname", "doc", "annotations"):
+            try:
+                setattr(self, f"__{attr}__", getattr(fn, f"__{attr}__"))
+            except AttributeError:
+                pass
+
+        # `__name__` and `__qualname` are the only attributes not commonly
+        # found in all objects. Therefore we set in manually in here, so
+        # type checkers can find it easily. Note that the attributes are
+        # however included in the `function` type, as well as the `type`
+        # and all other builtin kinds of callables / their bases. Therefore
+        # it should be obvious to checkers, that these attributes are here,
+        # but some checkers miss it (probably due to the definition of
+        # `Callable` in `typing.pyi`). See following sources for more:
+        # https://github.com/python/typeshed/blob/main/stdlib/typing.pyi#L236
+        # https://github.com/python/typeshed/blob/main/stdlib/builtins.pyi#L109
+
         try:
             self.__name__ = fn.__name__
         except AttributeError:
             pass
+
+        # Sometimes type checkers allow `__qualname__` not being defined,
+        # but we define it manually for completeness.
         try:
             self.__qualname__ = fn.__qualname__
         except AttributeError:
             pass
-        try:
-            self.__doc__ = fn.__doc__
-        except AttributeError:
-            pass
-        try:
-            self.__annotations__ = fn.__annotations__
-        except AttributeError:
-            pass
+
         try:
             self.__dict__.update(fn.__dict__)
         except AttributeError:
@@ -281,10 +290,13 @@ class _LRUCacheWrapperInstanceMethod(Generic[_R, _T]):
         wrapper: _LRUCacheWrapper[_R],
         instance: _T,
     ) -> None:
-        try:
-            self.__module__ = wrapper.__module__
-        except AttributeError:
-            pass
+        for attr in ("module", "doc", "annotations"):
+            try:
+                setattr(self, f"__{attr}__", getattr(wrapper, f"__{attr}__"))
+            except AttributeError:
+                pass
+
+        # See the reasoning behind this in the definition of `_LRUCacheWrapper`.
         try:
             self.__name__ = wrapper.__name__
         except AttributeError:
@@ -293,14 +305,7 @@ class _LRUCacheWrapperInstanceMethod(Generic[_R, _T]):
             self.__qualname__ = wrapper.__qualname__
         except AttributeError:
             pass
-        try:
-            self.__doc__ = wrapper.__doc__
-        except AttributeError:
-            pass
-        try:
-            self.__annotations__ = wrapper.__annotations__
-        except AttributeError:
-            pass
+
         try:
             self.__dict__.update(wrapper.__dict__)
         except AttributeError:
