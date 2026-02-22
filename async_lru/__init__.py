@@ -75,7 +75,7 @@ class _LRUCacheWrapper(Generic[_R]):
         ttl: Optional[float],
         jitter: Optional[float],
     ) -> None:
-        for attr in ("module", "qualname", "doc", "annotations"):
+        for attr in ("module", "doc", "annotations"):
             try:
                 setattr(self, f"__{attr}__", getattr(fn, f"__{attr}__"))
             except AttributeError:
